@@ -3,6 +3,7 @@ import { pubMessage } from "./api/public";
 import { protMessage } from "./api/protected";
 import cors from "@elysiajs/cors";
 import { swagger } from '@elysiajs/swagger'
+import { users } from "./data/userdata";
 
 
 const validApiKeys = new Set(['api-key-123', 'api-key-456'])
@@ -44,11 +45,15 @@ const app = new Elysia()
   .get("/api/public", (context) => { pubMessage(); console.log(context.request) })
   .onBeforeHandle({ as: 'local' }, (request) => {
     const headers = request.headers
-    const apiKey = headers['x-api-key']
+    const rawtoken = headers['authorization']
+    console.log("auth bearer token: ", rawtoken)
+    if (!rawtoken) return status(401)
+    const token = rawtoken.split(' ')
+    const isAuthenticated = users.find((user) => user.secret == token[1])
+    console.log('should be an auth user: ', isAuthenticated)
 
-    if (!apiKey) return status(401)
-    const isAuthenticated = validApiKeys.has(apiKey)
     if (!isAuthenticated) return status(401)
+    if (isAuthenticated.role!='admin') return status(401)
   })
   .listen(3000)
   .get("/api/protected", () => protMessage())
