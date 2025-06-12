@@ -20,7 +20,7 @@ export const loginApi = new Elysia({ prefix: '/api' })
         console.log('new users:', users);
         cookie.authentication.set({ value: value })
         return 'Cookie Set'
-    })
+    }, { detail: { tags: ['login/signup'] } })
     .post('/login', async ({ jwt, body: { username, password }, cookie }) => {
         const foundUser = users.find((user) => user.username == username)
         console.log('looking for username: ', username);
@@ -41,7 +41,7 @@ export const loginApi = new Elysia({ prefix: '/api' })
         body: t.Object({
             username: t.String(),
             password: t.String()
-        })
+        }), detail: { tags: ['login/signup'] }
     })
 
 
