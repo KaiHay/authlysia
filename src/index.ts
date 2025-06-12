@@ -4,9 +4,7 @@ import { protMessage } from "./api/protected";
 import cors from "@elysiajs/cors";
 import { swagger } from '@elysiajs/swagger'
 import { users } from "./data/userdata";
-import jwt from "@elysiajs/jwt";
 import { loginApi } from "./api/login";
-import cookie from "@elysiajs/cookie";
 import 'dotenv/config'
 import { jwtCreate } from "./tools/plugins";
 
@@ -38,27 +36,25 @@ const app = new Elysia()
   .get("/api/public", (context) => { pubMessage(); console.log(context.request) })
   .use(jwtCreate)
   .use(loginApi)
-  .get("/sign", async ({ jwt, request }) => {
-    const headers = request.headers
-    const name = headers.get('name')
-    if (!name) return status(401)
-    const now = Math.floor(Date.now() / 1000)
-    const onehour = 60 * 60
-    const value = await jwt.sign({ name: name, exp: now + onehour })
-    users.push({ id: users.length + 1, username: name, secret: value, password: '11', role: 'admin' })
-    console.log('new users:', users);
-
-  })
   .onBeforeHandle({ as: 'local' }, async ({ jwt, request }) => {
     const headers = request.headers
     const rawtoken = headers.get('authorization')
     if (!rawtoken) return status(401)
 
     const [_, token] = rawtoken.split(' ')
+    console.log("need to verify");
+
     const jwtoken = await jwt.verify(token)
+    console.log('jwtoken: ',jwtoken);
+    
+    if (!jwtoken) return status(401)
+    const now = Math.floor(Date.now() / 1000)
+    if (!jwtoken.exp) return status(401)
+    if (jwtoken.exp > now) {
+      console.log("token expired")
+    }
     console.log('Verified token: ', jwtoken);
 
-    if (!jwtoken) return status(401)
     console.log('heres the jwt: ', jwtoken);
 
     let isAuthenticated = users.find((user) => user.username == jwtoken.name)
